@@ -1,5 +1,5 @@
-# Building Serverless Data Lakes on AWS
-Created by Amazon Web Services (c)
+# Intro to ECS Lab 
+Created by Amazon Web Services &copy;
 
 ![Architecture Diagram](./img/reference-arch.png)
 
