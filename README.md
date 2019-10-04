@@ -1,7 +1,7 @@
 # Building Serverless Data Lakes on AWS
 Created by Amazon Web Services (c)
 
-![Architecture Diagram](./img/unnik-techfest-2019-lab-architecture.png)
+![Architecture Diagram](./img/reference-arch.png)
 
 ### Learning outcomes from this workshop?
 * Deploy a microservices architecture using containers
