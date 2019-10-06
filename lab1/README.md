@@ -1,12 +1,8 @@
-# AWS Container Immersion Day: Lab 1
-
-## Overview of lab
+## Lab 1: Intro to Docker and ECR
 
 This lab introduces the basics of working with microservices and [ECS](https://aws.amazon.com/ecs/). This includes: preparing two microservice container images, setting up the initial ECS cluster, and deployment of the containers with traffic routed through an [ALB](https://aws.amazon.com/elasticloadbalancing/applicationloadbalancer/).
 
-You&#39;ll need to [have a working AWS account](https://aws.amazon.com/) to use this lab.
-
-#
+![Architecture](./img/1.png)
 
 ## 1. Setting up the VPC
 
@@ -31,21 +27,29 @@ Skip to step 2 if you&#39;re using an existing VPC.  Otherwise, configure a VPC 
 
 In order to work with ECS from our workstation, we will need the appropriate permissions for our developer workstation instance.   Go to the [IAM Console](https://console.aws.amazon.com/iam/home), **Roles** \&gt; **Create New Role \&gt; AWS Service \&gt; EC2.** We will later assign this role to our workstation instance.
 
+![Select ECS](./img/2.png)
+
 Click **Next.**
 
 Enter **AmazonEC2ContainerRegistryFullAccess** in the Filter text field.
+
+![ECSContainerRegistryFullAccess](./img/3.png)
 
 Click **Next.**
 
 Enter **ecslabworkstationprofile** for the Role name and click **Create Role**.
 
+![ecslabworkstationprofile](./img/4.png)
+
 Use the same process to create another new role so that EC2 instances in the ECS cluster have appropriate permissions to access the container registry, auto-scale, etc. We will later assign this role to the EC2 instances in our ECS cluster.
 
 In the Create Role screen, enter AmazonEC2ContainerServiceforEC2Role AmazonEC2ContainerServiceAutoscaleRole in the text field (without a comma) and select the two policies.
 
+![Select two policies](./img/5.png)
+
 In the Review screen, enter **ecslabinstanceprofile** for the Role name and click **Create Role**.
 
-
+![Create role](./img/6.png)
 
 **Note** : By default, the ECS first run wizard creates ecsInstanceRole for you to use. However, it&#39;s a best practice to create a specific role for your use so that we can add more policies in the future when we need to.
 
@@ -74,6 +78,10 @@ Navigate to the [ECS console](https://console.aws.amazon.com/ecs/) and click Cre
 | IAM Role | ecslabinstanceprofile |
 
 Click **Create**.  It will take a few minutes to create the cluster.
+
+![Create cluster](./img/7.png)
+![Configure networking](./img/8.png)
+
 
 ­
 
@@ -282,7 +290,11 @@ Navigate to the [ECS console](https://console.aws.amazon.com/ecs/), and select *
 
 Name your first repository **ecs-lab-web** :
 
+![Create repository](./img/9.png)
+
 Once you&#39;ve created the repository, it will display the push commands. Take note of these, as you&#39;ll need them in the next step. The push commands should like something like this:
+
+![Push image](./img/10.png)
 
 Once you&#39;ve created the ecs-lab-web repository, repeat the process for the **ecs-lab-api** repository. Take note of the push commands for this second repository. Push commands are unique per repository.
 
