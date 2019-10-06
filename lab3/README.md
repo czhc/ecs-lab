@@ -17,7 +17,7 @@ In this lab, we present a solution using [Amazon CloudWatch Logs](https://docs.a
 
 Our approach involves setting up a container whose sole purpose is logging. It runs [rsyslog](http://www.rsyslog.com/) and the CloudWatch Logs agent, and we use [Docker Links](https://docs.docker.com/userguide/dockerlinks/) to communicate to other containers. With this strategy, it becomes easy to link existing application containers such as Apache and have discrete logs per task. This logging container is defined in each ECS [task definition](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_defintions.html), which is a collection of containers running together on the same container instance. With our container log collection strategy, you do not have to modify your Docker image. Any log mechanism tweak is specified in the task definition.
 
-
+![Architecture](./img/1.png)
 
 **Note:**  Please note that we are using the US East (N. Virginia) region throughout this exercise. If you would like to use a different AWS region, please make sure to update your configuration accordingly.
 
@@ -38,7 +38,7 @@ We also assume that all following requirements are in place in your AWS account:
 - Git and Docker are installed on the image building host
 - The user owns a [Docker Hub](https://hub.docker.com/) account and a repository (&quot;my\_docker\_hub\_repo&quot; in this document)
 
-Let&#39;s get started.
+Let's get started.
 
 ##
 # Create the Docker image
@@ -47,32 +47,43 @@ The first step is to create the Docker image to use as a logging container. For 
 
 1. Install Git and Docker. The following steps pertain to the Amazon Linux AMI but you should follow the Git and Docker installation instructions respective to your machine.
 
+```
 $ sudo yum update -y &amp;&amp; sudo yum -y install git docker
+```
 
 1. Make sure that the Docker service is running:
 
+```
 $ sudo service docker start
+```
 
 1. Clone the GitHub repository containing the files you need:
 
+```
 $ git clone https://github.com/awslabs/ecs-cloudwatch-logs.git
-
 $ cd ecs-cloudwatch-logs
+```
 
 You should now have a directory containing two .conf files and a Dockerfile. Feel free to read the content of these files and identify the mechanisms used.
 
 
 1. Log in to Docker Hub:
 
+```
 $ sudo docker login
+```
 
 1. Build the container image (replace the _my\_docker\_hub\_repo_ with your repository name):
 
+```
 $ sudo docker build -t _my\_docker\_hub\_repo_/cloudwatchlogs .
+```
 
 1. Push the image to your repo:
 
+```
 $ sudo docker push _my\_docker\_hub\_repo_/cloudwatchlogs
+```
 
 Use the build-and-push time to dive deeper into what will live in this container. You can follow along by reading the [Dockerfile](https://github.com/awslabs/ecs-cloudwatch-logs/blob/master/Dockerfile). Here are a few things worth noting:
 
@@ -98,58 +109,35 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 
 1. Create an IAM policy for CloudWatch Logs and ECS: point your browser to the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1), choose  **Policies ** and then  **Create Policy**. Choose  **Select ** next to  **Create Your Own Policy**. Give your policy a name (e.g., ECSCloudWatchLogs) and paste the text below as the Policy Document value.
 
- LibreOffice/5.2.7.2$Linux\_X86\_64 LibreOffice\_project/20m0$Build-2Microsoft Office UserMicrosoft Office User32017-08-25T03:07:002017-08-25T03:07:00PT1M15.00000falsefalsefalsefalse 501 501 16999 2995 true true false true true true 0 true true false false true false true false true true true true true false true true false false true true true true false false false true false true true false true false false 276302 false false true false true true false false 0 false true high-resolution false false true false true true true false false true false false false true true 205595 true 1 true false false 0 false false false
 
-# {
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "logs:Create*",
+        "logs:PutLogEvents"
+        ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Action": [
+        "ecs:CreateCluster",
+        "ecs:DeregisterContainerInstance",
+        "ecs:DiscoverPollEndpoint",
+        "ecs:RegisterContainerInstance",
+        "ecs:Submit*",
+        "ecs:Poll"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
 
-#   &quot;Version&quot;: &quot;2012-10-17&quot;,
-
-#   &quot;Statement&quot;: [
-
-#     {
-
-#       &quot;Action&quot;: [
-
-#         &quot;logs:Create\*&quot;,
-
-#         &quot;logs:PutLogEvents&quot;
-
-#         ],
-
-#       &quot;Effect&quot;: &quot;Allow&quot;,
-
-#       &quot;Resource&quot;: &quot;arn:aws:logs:\*:\*:\*&quot;
-
-#     },
-
-#     {
-
-#       &quot;Action&quot;: [
-
-#         &quot;ecs:CreateCluster&quot;,
-
-#         &quot;ecs:DeregisterContainerInstance&quot;,
-
-#         &quot;ecs:DiscoverPollEndpoint&quot;,
-
-#         &quot;ecs:RegisterContainerInstance&quot;,
-
-#         &quot;ecs:Submit\*&quot;,
-
-#         &quot;ecs:Poll&quot;
-
-#       ],
-
-#       &quot;Effect&quot;: &quot;Allow&quot;,
-
-#       &quot;Resource&quot;: &quot;\*&quot;
-
-#     }
-
-#   ]
-
-# }
-
+```
 
 
 9. Create a new IAM EC2 service role and attach the above policy to it. In IAM, choose  **Roles** ,  **Create New Role**. Pick a name for the role (e.g., ECSCloudWatchLogs). Choose  **Role Type** ,  **Amazon EC2**. Find and pick the policy you just created, click Next Step, and then  **Create Role**.
@@ -159,16 +147,13 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 
 10. Launch an instance with the Amazon ECS AMI and the above role in the US East (N. Virginia) region. On the EC2 console page, choose  **Launch Instance**. Choose  **Community AMIs**. In the search box, type &quot;amazon-ecs-optimized&quot; and choose Select for the latest version (2015.03.b). Select the appropriate instance type and choose  **Next**.
 
-11. Choose the appropriate  **Network ** value for your ECS cluster. Make sure that  **Auto-assign Public IP** is enabled. Choose the IAM role that you just created (e.g., ECSCloudWatchLogs). Expand  **Advanced Details**  and in the  **User data**  field, add the following while substituting _your\_cluster\_name_ for the appropriate name:
+11. Choose the appropriate  **Network** value for your ECS cluster. Make sure that  **Auto-assign Public IP** is enabled. Choose the IAM role that you just created (e.g., ECSCloudWatchLogs). Expand  **Advanced Details**  and in the  **User data**  field, add the following while substituting _your\_cluster\_name_ for the appropriate name:
 
- LibreOffice/5.2.7.2$Linux\_X86\_64 LibreOffice\_project/20m0$Build-2Microsoft Office UserMicrosoft Office User32017-08-25T03:05:002017-08-25T03:05:00P0D15.00000falsefalsefalsefalse 501 501 16999 2995 true true false true true true 0 true true false false true false true false true true true true true false true true false false true true true true false false false true false true true false true false false 1694535 false false true false true true false false 0 false true high-resolution false false true false true true true false false true false false false true true 1627478 true 1 true false false 0 false false false
-
+```
 # #!/bin/bash
-
-# echo ECS\_CLUSTER=your\_cluster\_name \&gt;\&gt; /etc/ecs/ecs.config
-
+# echo ECS\_CLUSTER=your\_cluster\_name >> /etc/ecs/ecs.config
 # EOF
-
+```
 
 
 12. Choose  **Next: Add Storage** , then  **Next: Tag Instance**. You can give your container instance a name on this page. Choose  **Next: Configure Security Group**. On this page, you should make sure that both SSH and HTTP are open to at least your own IP address.
@@ -178,110 +163,60 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 14. Ensure that your newly spun-up EC2 instance is part of your container instances (note that it may take up to a minute for the container instance to register with ECS). In the [ECS console](https://console.aws.amazon.com/ecs/home), select the appropriate cluster. Select the  **ECS Instances**  tab. You should see a container instance with the instance ID that you just noted after a minute.
 
 15. On the left pane of the ECS console, choose  **Task Definitions** , then  **Create new Task Definition**. On the JSON tab, paste the code below, overwriting the default text. Make sure to replace &quot;_my\_docker\_hub\_repo_&quot; with your own Docker Hub repo name and choose  **Create**.
+ 
+```
+{
+  "volumes": [
+    {
+      "name": "ecs_instance_logs",
+      "host": {
+        "sourcePath": "/var/log"
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "environment": [],
+      "name": "cloudwatchlogs",
+      "image": "my_docker_hub_repo/cloudwatchlogs",
+      "cpu": 50,
+      "portMappings": [],
+      "memory": 64,
+      "essential": true,
+      "mountPoints": [
+        {
+          "sourceVolume": "ecs_instance_logs",
+          "containerPath": "/mnt/ecs_instance_logs",
+          "readOnly": true
+        }
+      ]
+    },
+    {
+      "environment": [],
+      "name": "httpd",
+      "links": [
+        "cloudwatchlogs"
+      ],
+      "image": "httpd",
+      "cpu": 50,
+      "portMappings": [
+        {
+	  "containerPort": 80,
+          "hostPort": 80
+        }
+      ],
+      "memory": 128,
+      "entryPoint": ["/bin/bash", "-c"],      "command": [
+        "apt-get update && apt-get -y install wget && echo 'CustomLog "| /usr/bin/logger -t httpd -p local6.info -n cloudwatchlogs -P 514" "%v %h %l %u %t %r %>s %b %{Referer}i %{User-agent}i"' >> /usr/local/apache2/conf/httpd.conf && echo 'ErrorLogFormat "%v [%t] [%l] [pid %P] %F: %E: [client %a] %M"' >> /usr/local/apache2/conf/httpd.conf && echo 'ErrorLog "| /usr/bin/logger -t httpd -p local7.info -n cloudwatchlogs -P 514"' >> /usr/local/apache2/conf/httpd.conf && echo ServerName `hostname` >> /usr/local/apache2/conf/httpd.conf && rm -rf /usr/local/apache2/htdocs/* && cd /usr/local/apache2/htdocs && wget -mkEpnp -nH --cut-dirs=4 http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html && /usr/local/bin/httpd-foreground"
+      ],
+      "essential": true
+    }
+  ],
+  "family": "cloudwatchlogs"
+}
 
- LibreOffice/5.2.7.2$Linux\_X86\_64 LibreOffice\_project/20m0$Build-2Microsoft Office UserMicrosoft Office User22017-08-25T03:15:002017-08-25T03:15:00P0D15.00000falsefalsefalsefalse 501 501 16999 2995 true true false true true true 0 true true false false true false true false true true true true true false true true false false true true true true false false false true false true true false true false false 571759 false false true false true true false false 0 false true high-resolution false false true false true true true false false true false false false true true 500968 true 1 true false false 0 false false false
+```
 
-# {
-
-#   &quot;volumes&quot;: [
-
-#     {
-
-#       &quot;name&quot;: &quot;ecs\_instance\_logs&quot;,
-
-#       &quot;host&quot;: {
-
-#         &quot;sourcePath&quot;: &quot;/var/log&quot;
-
-#       }
-
-#     }
-
-#   ],
-
-#   &quot;containerDefinitions&quot;: [
-
-#     {
-
-#       &quot;environment&quot;: [],
-
-#       &quot;name&quot;: &quot;cloudwatchlogs&quot;,
-
-#       &quot;image&quot;: &quot;my\_docker\_hub\_repo/cloudwatchlogs&quot;,
-
-#       &quot;cpu&quot;: 50,
-
-#       &quot;portMappings&quot;: [],
-
-#       &quot;memory&quot;: 64,
-
-#       &quot;essential&quot;: true,
-
-#       &quot;mountPoints&quot;: [
-
-#         {
-
-#           &quot;sourceVolume&quot;: &quot;ecs\_instance\_logs&quot;,
-
-#           &quot;containerPath&quot;: &quot;/mnt/ecs\_instance\_logs&quot;,
-
-#           &quot;readOnly&quot;: true
-
-#         }
-
-#       ]
-
-#     },
-
-#     {
-
-#       &quot;environment&quot;: [],
-
-#       &quot;name&quot;: &quot;httpd&quot;,
-
-#       &quot;links&quot;: [
-
-#         &quot;cloudwatchlogs&quot;
-
-#       ],
-
-#       &quot;image&quot;: &quot;httpd&quot;,
-
-#       &quot;cpu&quot;: 50,
-
-#       &quot;portMappings&quot;: [
-
-#         {
-
-#          &quot;containerPort&quot;: 80,
-
-#           &quot;hostPort&quot;: 80
-
-#         }
-
-#       ],
-
-#       &quot;memory&quot;: 128,
-
-
-
- LibreOffice/5.2.7.2$Linux\_X86\_64 LibreOffice\_project/20m0$Build-2Microsoft Office UserMicrosoft Office User22017-08-25T03:13:002017-08-25T03:13:00P0D15.00000falsefalsefalsefalse 501 501 16999 2995 true true false true true true 0 true true false false true false true false true true true true true false true true false false true true true true false false false true false true true false true false false 1794986 false false true false true true false false 0 false true high-resolution false false true false true true true false false true false false false true true 1762280 true 1 true false false 0 false false false
-
-# &quot;entryPoint&quot;: [&quot;/bin/bash&quot;, &quot;-c&quot;],      &quot;command&quot;: [
-
-#         &quot;apt-get update &amp;&amp; apt-get -y install wget &amp;&amp; echo &#39;CustomLog &quot;| /usr/bin/logger -t httpd -p local6.info -n cloudwatchlogs -P 514&quot; &quot;%v %h %l %u %t %r %\&gt;s %b %{Referer}i %{User-agent}i&quot;&#39; \&gt;\&gt; /usr/local/apache2/conf/httpd.conf &amp;&amp; echo &#39;ErrorLogFormat &quot;%v [%t] [%l] [pid %P] %F: %E: [client %a] %M&quot;&#39; \&gt;\&gt; /usr/local/apache2/conf/httpd.conf &amp;&amp; echo &#39;ErrorLog &quot;| /usr/bin/logger -t httpd -p local7.info -n cloudwatchlogs -P 514&quot;&#39; \&gt;\&gt; /usr/local/apache2/conf/httpd.conf &amp;&amp; echo ServerName `hostname` \&gt;\&gt; /usr/local/apache2/conf/httpd.conf &amp;&amp; rm -rf /usr/local/apache2/htdocs/\* &amp;&amp; cd /usr/local/apache2/htdocs &amp;&amp; wget -mkEpnp -nH --cut-dirs=4 http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html &amp;&amp; /usr/local/bin/httpd-foreground&quot;
-
-#       ],
-
-#       &quot;essential&quot;: true
-
-#     }
-
-#   ],
-
-#   &quot;family&quot;: &quot;cloudwatchlogs&quot;
-
-# }
 
 
 
@@ -299,8 +234,7 @@ What are some highlights of this task definition?
 
 Note that we redirect httpd log files in our task definition at the command level for the httpd image. Applying the same concept to another image would simply require you to know where your application maintains its log files.
 
-##
-# Create a service
+### Create a service
 
 16. On the services tab in the ECS console, choose  **Create**. Choose the task definition created in step 15, name the service and set the number of tasks to 1. Select  **Create service**.
 
@@ -308,7 +242,6 @@ Note that we redirect httpd log files in our task definition at the command leve
 
 18. Open the [CloudWatch Logs console](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:) to view new ecs entries.
 
-##
-# Conclusion
+### Conclusion
 
 If you have followed all of these steps, you should now have a two container task running in your ECS cluster. One container serves web pages while the other one collects the log activity from the web container and sends it to CloudWatch Logs. Such a setup can be replicated with any other application. All you need is to specify a different container image and describe the expected log files in the command section.
