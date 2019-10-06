@@ -142,9 +142,9 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 11. Choose the appropriate  **Network** value for your ECS cluster. Make sure that  **Auto-assign Public IP** is enabled. Choose the IAM role that you just created (e.g., ECSCloudWatchLogs). Expand  **Advanced Details**  and in the  **User data**  field, add the following while substituting _your\_cluster\_name_ for the appropriate name:
 
 ```
-# #!/bin/bash
-# echo ECS\_CLUSTER=your\_cluster\_name >> /etc/ecs/ecs.config
-# EOF
+#!/bin/bash
+echo ECS\_CLUSTER=your\_cluster\_name >> /etc/ecs/ecs.config
+
 ```
 
 
