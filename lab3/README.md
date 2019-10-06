@@ -211,13 +211,13 @@ echo ECS\_CLUSTER=your\_cluster\_name >> /etc/ecs/ecs.config
 
 What are some highlights of this task definition?
 
-- The _sourcePath_ value allows the CloudWatch Logs agent running in the log collection container to access the host-based Docker and ECS agent log files. ** ** You can [change the retention period](https://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/SettingLogRetention.html) in CloudWatch Logs.
+- The _sourcePath_ value allows the CloudWatch Logs agent running in the log collection container to access the host-based Docker and ECS agent log files. You can [change the retention period](https://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/SettingLogRetention.html) in CloudWatch Logs.
 - The _cloudwatchlogs_ container is marked _essential_, which means that if log collection goes down, so should the application it is collecting from. Similarly, the web server is marked _essential _as well. You can easily change this behavior.
 - The command section is a bit lengthy. Let us break it down:
   - We first install wget so that we can later clone the ECS documentation for display on our web server.
-  - We then write four lines to httpd.conf. These are the echo commands. They describe how httpd will generate log files and their format. Notice how we tag (-t httpd) these files with httpd and assign them a specific facility (-p localX.info). We also specify that logger is to send these entries to host -n cloudwatchlogs on port -p 514. This will be handled by linking. Hence, port 514 is left untouched on the machine and we could have as many of these logging containers running as we want.
-  - %h %l %u %t %r %\&gt;s %b %{Referer}i %{User-agent}i should look fairly familiar to anyone who has looked into tweaking Apache logs. The initial %v is the server name and it will be replaced by the container ID. This is how we are able to discern what container the logs come from in CloudWatch Logs.
-  - We remove the default httpd landing page with rm -rf.
+  - We then write four lines to httpd.conf. These are the echo commands. They describe how httpd will generate log files and their format. Notice how we tag (-t httpd) these files with httpd and assign them a specific facility (-p localX.info). We also specify that logger is to send these entries to host `-n cloudwatchlogs` on port `-p 514`. This will be handled by linking. Hence, port 514 is left untouched on the machine and we could have as many of these logging containers running as we want.
+  - `%h %l %u %t %r %\&gt;s %b %{Referer}i %{User-agent}i` should look fairly familiar to anyone who has looked into tweaking Apache logs. The initial %v is the server name and it will be replaced by the container ID. This is how we are able to discern what container the logs come from in CloudWatch Logs.
+  - We remove the default httpd landing page with `rm -rf`.
   - We instead use wget to download a clone of the ECS documentation.
   - And, finally, we start httpd. Note that we redirect httpd log files in our task definition at the command level for the httpd image. Applying the same concept to another image would simply require you to know where your application maintains its log files.
 
