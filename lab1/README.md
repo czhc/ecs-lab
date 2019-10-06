@@ -25,7 +25,7 @@ Skip to step 2 if you&#39;re using an existing VPC.  Otherwise, configure a VPC 
 
 ## 2. Setting up the IAM user and roles
 
-In order to work with ECS from our workstation, we will need the appropriate permissions for our developer workstation instance.   Go to the [IAM Console](https://console.aws.amazon.com/iam/home), **Roles** \&gt; **Create New Role \&gt; AWS Service \&gt; EC2.** We will later assign this role to our workstation instance.
+In order to work with ECS from our workstation, we will need the appropriate permissions for our developer workstation instance.   Go to the [IAM Console](https://console.aws.amazon.com/iam/home) >  **Roles** >  **Create New Role**  > **AWS Service** > **EC2.** We will later assign this role to our workstation instance.
 
 ![Select ECS](./img/2.png)
 
