@@ -1,10 +1,8 @@
-##
-# ECS CloudWatch Logs Lab
+### ECS CloudWatch Logs Lab
 
 When building applications on ECS, it is a good practice to follow a micro services approach, which encourages the design of a single application component in a single container. This design improves flexibility and elasticity, while leading to a loosely coupled architecture for resilience and ease of maintenance. However, this architectural style makes it important to consider how your containers will communicate and share data with each other.
 
-##
-# Why is it useful?
+### Why is it useful?
 
 Application logs are useful for many reasons. They are the primary source of troubleshooting information. In the field of security, they are essential to forensics. Web server logs are often leveraged for analysis (at scale) in order to gain insight into usage, audience, and trends.
 
@@ -12,8 +10,7 @@ Centrally collecting container logs is a common problem that can be solved in a 
 
 In this lab, we present a solution using [Amazon CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/WhatIsCloudWatchLogs.html). CloudWatch is a monitoring service for AWS cloud resources and the applications you run on AWS. CloudWatch Logs can be used to collect and monitor your logs for specific phrases, values, or patterns. For example, you could set an alarm on the number of errors that occur in your system logs or view graphs of web request latencies from your application logs. The additional advantages here are that you can look at a single pane of glass for all of your monitoring needs because such metrics as CPU, disk I/O, and network for your container instances are already available on CloudWatch.
 
-##
-# Here is how we are going to do it
+### Here is how we are going to do it
 
 Our approach involves setting up a container whose sole purpose is logging. It runs [rsyslog](http://www.rsyslog.com/) and the CloudWatch Logs agent, and we use [Docker Links](https://docs.docker.com/userguide/dockerlinks/) to communicate to other containers. With this strategy, it becomes easy to link existing application containers such as Apache and have discrete logs per task. This logging container is defined in each ECS [task definition](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_defintions.html), which is a collection of containers running together on the same container instance. With our container log collection strategy, you do not have to modify your Docker image. Any log mechanism tweak is specified in the task definition.
 
@@ -21,8 +18,7 @@ Our approach involves setting up a container whose sole purpose is logging. It r
 
 **Note:**  Please note that we are using the US East (N. Virginia) region throughout this exercise. If you would like to use a different AWS region, please make sure to update your configuration accordingly.
 
-##
-# Linking to a CloudWatch logging container
+### Linking to a CloudWatch logging container
 
 We will create a container that can be deployed as a syslog host. It will accept standard syslog connections on 514/TCP to rsyslog through container links, and will also forward those logs to CloudWatch Logs via the CloudWatch Logs agent. The idea is that this container can be deployed as the logging component in your architecture (not limited to ECS; it could be used for any centralized logging).
 
@@ -40,24 +36,23 @@ We also assume that all following requirements are in place in your AWS account:
 
 Let's get started.
 
-##
-# Create the Docker image
+### Create the Docker image
 
 The first step is to create the Docker image to use as a logging container. For this, all you need is a machine that has Git and Docker installed. You could use your own local machine or an EC2 instance.
 
 1. Install Git and Docker. The following steps pertain to the Amazon Linux AMI but you should follow the Git and Docker installation instructions respective to your machine.
 
 ```
-$ sudo yum update -y &amp;&amp; sudo yum -y install git docker
+$ sudo yum update -y && sudo yum -y install git docker
 ```
 
-1. Make sure that the Docker service is running:
+2. Make sure that the Docker service is running:
 
 ```
 $ sudo service docker start
 ```
 
-1. Clone the GitHub repository containing the files you need:
+3. Clone the GitHub repository containing the files you need:
 
 ```
 $ git clone https://github.com/awslabs/ecs-cloudwatch-logs.git
@@ -67,19 +62,19 @@ $ cd ecs-cloudwatch-logs
 You should now have a directory containing two .conf files and a Dockerfile. Feel free to read the content of these files and identify the mechanisms used.
 
 
-1. Log in to Docker Hub:
+4. Log in to Docker Hub:
 
 ```
 $ sudo docker login
 ```
 
-1. Build the container image (replace the _my\_docker\_hub\_repo_ with your repository name):
+5. Build the container image (replace the _my\_docker\_hub\_repo_ with your repository name):
 
 ```
 $ sudo docker build -t _my\_docker\_hub\_repo_/cloudwatchlogs .
 ```
 
-1. Push the image to your repo:
+6. Push the image to your repo:
 
 ```
 $ sudo docker push _my\_docker\_hub\_repo_/cloudwatchlogs
@@ -95,19 +90,17 @@ Use the build-and-push time to dive deeper into what will live in this container
 - We use [Supervisor](https://docs.docker.com/articles/using_supervisord/) to run more than one process in this container: rsyslog and the CloudWatch Logs agent.
 - We expose port 514 for rsyslog to collect log entries via the Docker link.
 
-##
-# Create an ECS cluster
+### Create an ECS cluster
 
 Now, create an ECS cluster. One way to do so could be to use the Amazon ECS console first run wizard. For now, though, all you need is an ECS cluster.
 
 7. Navigate to the [ECS console](https://console.aws.amazon.com/ecs/home) and choose Create cluster. Give it a unique name that you have not used before (such as &quot;ECSCloudWatchLogs&quot;), and choose Create.
 
-##
-# Create an IAM role
+### Create an IAM role
 
 The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions and spin up a new container instance with this role. All of this can be done manually via the console or you can run a CloudFormation template. To use the CloudFormation template, navigate to [CloudFormation console](https://console.aws.amazon.com/cloudformation), create a new stack by using [this template](https://github.com/awslabs/ecs-cloudwatch-logs/blob/master/ecs-cwlogs-template.json) and go straight to step 14 (just specify the ECS cluster name used above, choose your preferred instance type and select the appropriate EC2 SSH key, and leave the rest unchanged). Otherwise, continue on to step 8.
 
-1. Create an IAM policy for CloudWatch Logs and ECS: point your browser to the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1), choose  **Policies ** and then  **Create Policy**. Choose  **Select ** next to  **Create Your Own Policy**. Give your policy a name (e.g., ECSCloudWatchLogs) and paste the text below as the Policy Document value.
+8. Create an IAM policy for CloudWatch Logs and ECS: point your browser to the [IAM console](https://console.aws.amazon.com/iam/home?region=us-east-1), choose  **Policies ** and then  **Create Policy**. Choose  **Select ** next to  **Create Your Own Policy**. Give your policy a name (e.g., ECSCloudWatchLogs) and paste the text below as the Policy Document value.
 
 
 ```
@@ -142,8 +135,7 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 
 9. Create a new IAM EC2 service role and attach the above policy to it. In IAM, choose  **Roles** ,  **Create New Role**. Pick a name for the role (e.g., ECSCloudWatchLogs). Choose  **Role Type** ,  **Amazon EC2**. Find and pick the policy you just created, click Next Step, and then  **Create Role**.
 
-##
-# Launch an EC2 instance and ECS cluster
+### Launch an EC2 instance and ECS cluster
 
 10. Launch an instance with the Amazon ECS AMI and the above role in the US East (N. Virginia) region. On the EC2 console page, choose  **Launch Instance**. Choose  **Community AMIs**. In the search box, type &quot;amazon-ecs-optimized&quot; and choose Select for the latest version (2015.03.b). Select the appropriate instance type and choose  **Next**.
 
@@ -216,9 +208,6 @@ The next five steps set up a CloudWatch-enabled IAM role with EC2 permissions an
 }
 
 ```
-
-
-
 
 What are some highlights of this task definition?
 
