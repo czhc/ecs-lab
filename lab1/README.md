@@ -446,4 +446,4 @@ $ aws ecr list-images --repository-name=ecs-lab-api
 }
 ```
 
-**You have successfully completed Lab 1..  Keep all the infrastructure you have built running. You will be building on this in Lab 2**
+**You have successfully completed Lab 1. Keep all the infrastructure you have built running. You will be building on this in Lab 2**
